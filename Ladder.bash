@@ -16,7 +16,7 @@
 #   | |         along with this program.  If not, see <http://www.gnu.org/licenses/>.               | |
 #   | |                                                                                             | |
 #   | \_____________________________________________________________________________________________/ |
-#   |* _________________________________________Ladder_5/7/2020_____________________________________ *|
+#   |* _________________________________________Stairs_5/8/2020_____________________________________ *|
 #   | /                                                                                             \ |
 #   | |                                    Written by: Joshua Hoffman                               | |
 #   | |                                 joshua.hoffman.ray@protonmail.com                           | |
@@ -25,23 +25,50 @@
 #   |_________________________________________________________________________________________________|
 
 
-Ladder () {
+Ladder () { #System
+	
+	Osha () { #Safty
+	
+	Safty=$(awk -F'[\{| ]' '/#Safty/ {print $3}' $0 | tr -d '\n')
+	First=$(awk '/#Safty-/,/'$First'/ {gsub(/'$Safty'/, "");print $0}' "$0" | md5sum | cut -c 1-32) 
+	
+		if [[ $Safty = $First ]]; then 
+		Looks=$(awk -F'[\{| ]' '/#System/ {print $3}' "$0" | tr -d '\n')
+		Twice=$(awk '/"#System-"/,/'$Looks'/ {gsub(/'$Looks'|'$Safty'/, "");print $0}' "$0" | md5sum | cut -c 1-32)
+		
+			if [[ $Looks = $Twice ]]; then
+			return 0
+			fi
+	
+		fi
+	${Ladder_Error:+echo -e "Source system checksum mismatch!\\nIntegrity cannot be verfied!"}
+	${Ladder_Return:=exit} 1
+	} #Safty: 90e9d598dac7ad8c34dd2e239a9aa1a3
 
-Input=$1 
-cat $1 > .$1.bak
-declare -ag Checks=( $(awk '/#MD5/ && !/awk/ {print $2}' .$1.bak | tr -d \#) )
+Osha
+
+Input=$Input && Input=${Input:=$0}
+cat "$Input" > .$Input.bak
+declare -ag Checks=( $(awk -F'_|=|#|}' '/#MD5/ && !/awk/ {gsub("\t", "");print $3"="$4}' "$Input")
+$(awk -F'[_|=|#|}]' '/#MD5/ && !/awk/ {gsub("MD5", "Size");print $3"="$5}' "$Input") )
 declare -Ag ${Checks[@]}
 MD5_All=$(echo ${MD5[@]} | tr ' ' '|')
-Unchecked="$(awk '{gsub(/'${MD5_All}'/, ""); print $0}' .$1.bak)"
+Unchecked="$(awk '{gsub(/'${MD5_All}'/, ""); print $0}' ".$Input.bak")"
 
 	for Steps in ${!MD5[@]}; do
 	declare -Ag Functions[$Steps]="$(echo "$Unchecked" | awk '/'"$Steps \(\) \{"'/,/'#MD5[$Steps]'/')"
 	declare -Ag MD5_New[$Steps]="$(echo "${Functions[$Steps]}" | awk '{gsub(/'${MD5[$Steps]}'/, ""); print $0}' | md5sum | cut -c 1-32)"
-	Substring="gsub("/${MD5[$Steps]}"/, \""${MD5_New[$Steps]}"\");$Substring"
+	declare -Ag Size_New[$Steps]=$(echo ${Functions[$Steps]} | wc -c)
+
+		if [[ ${MD5_New[${Steps}]} != ${MD5[${Steps}]} ]]; then
+		Updated=$(date +'%H_%M_%S-%m/%d/%y') 
+		Substring="gsub("/${MD5[${Steps}]}"/, \""${MD5_New[${Steps}]}"\");$Substring"
+		fi
+
 	done
-	
-awk '{'"$Substring"'print $0}' .$1.bak > $1
 
-}
+awk '{'"$Substring"'print $0}' ".$Input.bak" > $Input
 
-Ladder $@
+} #System: 6227e7c25056323b44a1cec860f6f766
+
+Ladder
